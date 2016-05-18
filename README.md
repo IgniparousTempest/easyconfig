@@ -1,36 +1,55 @@
 # easyconfig
-A simple and extensible configuration parser for Python
+EasyConfig is a simple and extensible configuration tool for Python.
 
-# Example 1
+## Example 1
 With the following config files:
-
 ```
-AwesomeApp#Base : {
-  "awsRDS" : {
-    "databaseUrl" : "localhost:8001"
-  }
+Base : {
+    "databaseUrl" : "localhost:8001",
+    "datatbaseName" : "CoolDb",
+    "username" : "user",
+    "password" : "pass"
+}
+
+Base.Test -> Test
+
+Base.Release -> Release :+ {
+    "databaseUrl" : "address.eu-west-1.rds.amazonaws.com",
+    "username" : "release-user",
+    "password" : "p4ssword"
 }
 ```
 
-```
-AwesomeApp#Test : @AwesomeApp#Base
+```python
+from easyconfig import EasyConfig
+
+config = EasyConfig(stage='Release')
+
+# Which is better?
+config['awsRDS.databaseUrl']
+config['awsRDS']['databaseUrl']
+config.get('awsRDS.databaseUrl')
+config.get('awsRDS', 'databaseUrl')
 ```
 
-```
-AwesomeApp#Release : @AwesomeApp#Base.Release
+```python
+import MySQLdb
+from easyconfig import EasyConfig
 
-AwesomeApp#Base.Release : {
-  "awsRDS" : {
-    "databaseUrl" : "address.eu-west-1.rds.amazonaws.com"
-  }
-}
+config = EasyConfig(stage='Release')
+database_url = config['awsRDS.databaseUrl']  # address.eu-west-1.rds.amazonaws.com
+db_name = config['awsRDS.databaseUrl']       # CoolDb
+username = config['awsRDS.databaseUrl']      # release-user
+password = config['awsRDS.databaseUrl']      # p4ssword
+
+db = MySQLdb.connect(database_url, username, password, database_url)
 ```
 
-# Example 2
+## Example 2
 With the following config files:
 
 ```
-UltimateApp#Base : {
+Base : {
   "government" : {
     "leader" : "No one"
   },
@@ -39,11 +58,8 @@ UltimateApp#Base : {
   }
 }
 ```
-
 ```
-UltimateApp#SouthAfrica : @UltimateApp#Base.SouthAfrica
-
-UltimateApp#Base.SouthAfrica : {
+Base.SouthAfrica -> SouthAfrica : {
   "government" : {
     "leader" : "Jacob Zuma",
     "leaderTitle" : "president",
@@ -54,11 +70,8 @@ UltimateApp#Base.SouthAfrica : {
   }
 }
 ```
-
 ```
-UltimateApp#Australia : @UltimateApp#Base.Australia
-
-UltimateApp#Base.Australia : {
+Base.Australia -> Australia : {
   "government" : {
     "leader" : "Malcolm Turnbull",
     "leaderTitle" : "prime minister",
@@ -68,7 +81,4 @@ UltimateApp#Base.Australia : {
     "databaseName" : "Australia"
   }
 }
-```
-
-```python
 ```
