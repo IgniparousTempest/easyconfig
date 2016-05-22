@@ -1,52 +1,76 @@
 import glob
 import os
+from collections import namedtuple
 from typing import List
 
-from functools import reduce
+# noinspection PyProtectedMember
 from pip._vendor.pyparsing import dblQuotedString, removeQuotes, Suppress, Combine, Optional, Word, nums, Forward, \
     Keyword, replaceWith, Group, ZeroOrMore, alphas, Dict, alphanums, ParseResults
 
 
-class EasyConfig(object):
-    def __init__(self, stage, config_path, file_extension='.config'):
-        self.stage = stage
-        self._config = self._read_config_files(config_path, file_extension)
-        self._alias_realm_mapping = get_alias_to_fully_qualified_realm_path_mapping(self._config)
-        self._config = generate_absolute_dict(self._config)
-        self._full_realm_name = stage if stage not in self._alias_realm_mapping else self._alias_realm_mapping[stage]
+# noinspection PyPep8Naming
+def EasyConfig(stage: str, config_directory: str = 'configuration/', file_extension: str = '.config') -> namedtuple:
+    """
+    Converts the text based config file(s) into a Python accessible object. The creation of the config object is not
+    instant, so consider creating the config object only once.
 
-        if self.stage not in self._alias_realm_mapping and self.stage not in self._config:
-            raise KeyError("The realm '%s' was not found in the config" % self.stage)
+    :param stage: The stage for which the configuration must be generated, this can either be the full hierarchy path or
+     just the alias. It is a good design practice to use the alias rather than the full path, as this allows the
+     hierarchy of the config to be changed without changing the code.
+    :param config_directory: The directory where the config files are stored, the path is relative to the project
+     directory.
+    :param file_extension: The file extension that config file use, to use all files in the directory use '*'.
+    :return: The complied config object.
+    """
+    _config = _read_config_files(config_directory, file_extension)
+    _alias_realm_mapping = _get_alias_to_fully_qualified_realm_path_mapping(_config)
+    _config = _generate_absolute_dict(_config)
+    _full_realm_name = stage if stage not in _alias_realm_mapping else _alias_realm_mapping[stage]
 
-    @staticmethod
-    def _read_config_files(config_path, file_extension):
-        grammar_definition = grammar()
-        config_definition = ""
+    if _full_realm_name in _config:
+        return _convert(_config[_full_realm_name])
+    else:
+        raise KeyError("The realm '%s' was not found in the config" % stage)
 
-        abs_path = os.path.abspath(os.path.curdir + '/' + config_path)
-        for filename in glob.glob(os.path.join(abs_path, '*' + file_extension)):
-            with open(filename, 'r') as f:
-                config_definition += f.read() + '\n'
 
-        return grammar_definition.parseString(config_definition)
+class Config(object):
+    """
+    Object to store each node in a config definition.
+    """
 
-    def get(self, key: str):
-        # Make sure the key is of the right format. # TODO: Better solution maybe?
-        if not Combine(Word(alphanums + ' ') + ZeroOrMore('.' + Word(alphanums + ' '))).parseString(key)[0] == key:
-            raise ValueError("The key '%s' was not of the format name.name etc..." % key)
+    def as_dict(self):
+        """
+        Generates a nested Python dictionary of the class. As this is probably an infrequent use case, I have not stored
+         the dictionary in the class.
+        :return: Nested Python dictionary representation of class
+        """
+        d = {}
+        for k, v in self.__dict__.items():
+            if isinstance(v, Config):
+                d[k] = v.as_dict()
+            else:
+                d[k] = v
+        return d
 
-        return self._get_value_from_dict(self._config, self._full_realm_name, key)
 
-    @classmethod
-    def _get_value_from_dict(cls, dictionary, fully_qualified_realm, key):
-        the_d = dictionary[fully_qualified_realm]
-        try:
-            return reduce(lambda d, k: d[k], key.split('.'), the_d)
-        except KeyError:
-            raise KeyError("Key '{}' doesn't exist in dictionary".format(key))
+def _convert(dictionary: dict):
+    for key, value in dictionary.items():
+        if isinstance(value, dict):
+            dictionary[key] = _convert(value)
+    c = Config()
+    c.__dict__ = dictionary
+    return c
 
-    def __str__(self):
-        return str(self._config)
+
+def _read_config_files(config_path: str, file_extension: str):
+    config_definition = ""
+
+    abs_path = os.path.abspath(os.path.curdir + '/' + config_path)
+    for filename in glob.glob(os.path.join(abs_path, '*' + file_extension)):
+        with open(filename, 'r') as f:
+            config_definition += f.read() + '\n'
+
+    return parse_config(config_definition)
 
 
 # # # # # # # # # # # # # # # #
@@ -56,7 +80,7 @@ class EasyConfig(object):
 # # # # # # # # # # # # # # # #
 
 
-def generate_absolute_dict(configs) -> dict:
+def _generate_absolute_dict(configs) -> dict:
     d = {}
 
     # Sort the dictionary on full realm path so we can do a single pass
@@ -70,26 +94,28 @@ def generate_absolute_dict(configs) -> dict:
             try:
                 ref_d = d[parent_realm_path].copy()
             except KeyError:
+                # TODO: I can't figure out why the fick fack fuck this returns the quotation marks on either side of the
+                #  string
                 raise KeyError("The parent stage '{}' referenced from '{}' does not exist"
                                .format(parent_realm_path, config_def[0]))
 
-        d[config_def[0]] = convert_to_dictionary_inner(config_def, ref_d)
+        d[config_def[0]] = _convert_to_dictionary_inner(config_def, ref_d)
     return d
 
 
-def convert_to_dictionary_inner(config: ParseResults, ref_d):
+def _convert_to_dictionary_inner(config: ParseResults, ref_d: dict) -> dict:
     d = {}
-    if does_extends_parent(config):
+    if _does_extends_parent(config):
         d = ref_d.copy()
     for k, v in config.items():
         if isinstance(v, ParseResults):
-            d[k] = convert_to_dictionary_inner(v, ref_d[k] if k in ref_d else {})
+            d[k] = _convert_to_dictionary_inner(v, ref_d[k] if k in ref_d else {})
         else:
             d[k] = v
     return d
 
 
-def get_alias_to_fully_qualified_realm_path_mapping(configs: List[ParseResults]) -> dict:
+def _get_alias_to_fully_qualified_realm_path_mapping(configs: List[ParseResults]) -> dict:
     d = {}
     for config in configs:
         fqdn, alias = config[0], config[1]
@@ -97,7 +123,7 @@ def get_alias_to_fully_qualified_realm_path_mapping(configs: List[ParseResults])
     return d
 
 
-def does_extends_parent(config):
+def _does_extends_parent(config):
     try:
         return config[0] == ExtendsParent or config[1] == ExtendsParent or config[2] == ExtendsParent
     except IndexError:
@@ -197,6 +223,10 @@ def pretty_print_dict(d: dict, indent_size=2):
 # # # # # # # # # # # # # # # #
 
 
+def parse_config(text: str):
+    return grammar().parseString(text, parseAll=True)
+
+
 # noinspection PyPep8Naming
 def grammar():
     primitive = Forward()
@@ -216,7 +246,7 @@ def grammar():
 
     primitive << (STRING | NUMBER | BOOLEAN | NULL | LIST)
 
-    config_key = Suppress('"') + Word(alphanums + ' ') + Suppress('"')
+    config_key = Suppress('"') + Word(alphas, alphanums + '_') + Suppress('"')
 
     config_block = Forward()
     override_block = EXTENDS + config_block
@@ -235,61 +265,3 @@ def grammar():
 
     expression = ZeroOrMore(config_group)
     return expression
-
-
-if __name__ == "__main__":
-    test = """
-Base : {
-    "key6" : {
-        "nested0" : "base data",
-        "nested1" : "base data",
-        "nested2" : "base data"
-    },
-    "key7" : {
-        "nested0" : "base data",
-        "nested1" : "base data"
-    },
-    "key99" : 1
-}
-
-Base.Beta -> Beta :+ {
-    "key0" : "Jacob Zuma",
-    "key1" : True,
-    "key2" : False,
-    "key3" : None,
-    "key4" : [-1, 0.02, True, "lol"],
-    "key5" : 1,
-    "key6" :+ {
-        "nested0" : "beta data",
-        "nested1" : 2.1,
-        "nested3" : 1
-    },
-    "key7" : {
-        "nested0" : 1,
-        "nested1" : 2.1,
-        "nested2" : [1, True, "Pen Island"],
-        "nested3" : {
-        }
-    }
-}
-"""
-
-    print(grammar().parseString(test))
-    print(type(grammar().parseString(test)), '\n')
-    for config_declaration in grammar().parseString(test):
-        print(pretty_print(config_declaration))
-        print("fqdn:", config_declaration[0])
-        print("alias:", config_declaration[1])
-        print("key6.nested0:", config_declaration["key6"]["nested0"])
-        try:
-            print("key7.nested3:", type(config_declaration["key7"]["nested3"]))
-        except KeyError:
-            pass
-        if "key4" in config_declaration:
-            print(config_declaration["key4"])
-            print(type(config_declaration["key4"]))
-        if isinstance(config_declaration["key6"][0], ExtendsParent):
-            print("Extends")
-
-    print('\n', '\n', '\n')
-    print(pretty_print_dict(generate_absolute_dict(grammar().parseString(test))))
