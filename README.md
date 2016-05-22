@@ -145,6 +145,6 @@ Currently the only permissible datatypes for the parameters of the config are th
 | dict     | {a: 1}  |
 | -------- | ------- |
 
-A nested dict can be retrived by using the `.as_dict()` method on the config file.
+A nested dict can be retrieved by using the `.as_dict()` method on the config file.
 
 If there you have any suggestions, please feel free to contact me.
