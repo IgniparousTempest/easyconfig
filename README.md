@@ -1,23 +1,23 @@
 # easyconfig
 EasyConfig is a simple and extensible configuration tool for Python. EasyConfig enables inheritance based configuration definition, which can be used to specify region or release stage specific configuration (or any other conceivable configuration sub-stage).
 
-## Example 1
+## Example 1 - Inheritance
 The following config file defines the parameters for connecting to a database for a production release and a development release:
 ```
 Base : {
-    "databaseUrl" : "localhost:8001",
-    "datatbaseName" : "CoolDb",
-    "username" : "user",
-    "password" : "pass"
+    database_url : "localhost:8001",
+    database_name : "CoolDb",
+    username : "user",
+    password : "pass"
 }
 
 Base.Testing -> Testing :+ {
 }
 
 Base.Release -> Release :+ {
-    "databaseUrl" : "address.eu-west-1.rds.amazonaws.com",
-    "username" : "release-user",
-    "password" : "p4ssword"
+    database_url : "address.eu-west-1.rds.amazonaws.com",
+    username : "release-user",
+    password : "p4ssword"
 }
 ```
 The config can be accessed in the following way:
@@ -26,32 +26,32 @@ import MySQLdb
 from easyconfig import EasyConfig
 
 config = EasyConfig(stage='Release')
-database_url = config.awsRDS.databaseUrl  # address.eu-west-1.rds.amazonaws.com
-db_name = config.awsRDS.databaseUrl       # CoolDb
-username = config.awsRDS.databaseUrl      # release-user
-password = config.awsRDS.databaseUrl      # p4ssword
+database_url = config.database_url  # address.eu-west-1.rds.amazonaws.com
+db_name = config.database_name      # CoolDb
+username = config.username          # release-user
+password = config.password          # p4ssword
 
 db = MySQLdb.connect(database_url, username, password, database_url)
 
 config = EasyConfig(stage='Testing')
-database_url = config.awsRDS.databaseUrl  # localhost:8001
-db_name = config.awsRDS.databaseUrl       # CoolDb
-username = config.awsRDS.databaseUrl      # user
-password = config.awsRDS.databaseUrl      # password
+database_url = config.database_url  # localhost:8001
+db_name = config.database_name      # CoolDb
+username = config.username          # user
+password = config.password          # password
 
 db = MySQLdb.connect(database_url, username, password, database_url)
 ```
 
-A better example of acheiving the same result is as follows:
+A better example of achieving the same result is as follows:
 ```python
 import MySQLdb
 from easyconfig import EasyConfig
 
 def get_database_connection(config):
-    database_url = config.awsRDS.databaseUrl
-    db_name = config.awsRDS.databaseUrl
-    username = config.awsRDS.databaseUrl
-    password = config.awsRDS.databaseUrl
+    database_url = config.database_url
+    db_name = config.database_name
+    username = config.username
+    password = config.password
 
     return MySQLdb.connect(database_url, username, password, database_url)
 
