@@ -133,7 +133,6 @@ A `:` signifies a new block that overrides it's parent, a `:+` is a code block t
 ## Datatypes
 Currently the only permissible datatypes for the parameters of the config are the following Python primitives:
 
-| -------- | ------- |
 | Datatype | Example |
 | -------- | ------- |
 | int      | 1       |
@@ -143,7 +142,6 @@ Currently the only permissible datatypes for the parameters of the config are th
 | boolean  | True    |
 | string   | "Some text" |
 | dict     | {a: 1}  |
-| -------- | ------- |
 
 A nested dict can be retrieved by using the `.as_dict()` method on the config file.
 
