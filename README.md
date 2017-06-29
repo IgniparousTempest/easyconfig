@@ -6,7 +6,7 @@ EasyConfig is a simple and extensible configuration tool for Python. EasyConfig 
 [Example 1](#example_1_-_inheritance)
 [Example 2](#example_2)
 [Syntax](#syntax)
-[Data Types](#datatypes)
+[Data Types](#data_types)
 
 ## Installation
 `pip install easyconfig`
