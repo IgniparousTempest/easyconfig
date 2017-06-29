@@ -1,11 +1,30 @@
+import os
 import unittest
 
 from easyconfig import EasyConfig
 
 
 class BaseConfigTests(unittest.TestCase):
+    def test_easyconfig_loads_base_config_correctly(self):
+        path = os.path.dirname(os.path.realpath(__file__))
+        path = os.path.abspath(os.path.join(path, 'testing_config', 'base_only'))
+        config = EasyConfig("Base", path)
+
+        expected_dict = {
+            'database_url': 'localhost:8001',
+            'database_name': 'CoolDb',
+            'username': 'user',
+            'password': 'pass',
+            'connect': True,
+            'data': ['a', 1, True]
+        }
+
+        self.assertDictEqual(config.as_dict(), expected_dict)
+
     def test_easyconfig_raises_key_error_in_a_base_config(self):
-        config = EasyConfig("Base")
+        path = os.path.dirname(os.path.realpath(__file__))
+        path = os.path.abspath(os.path.join(path, 'testing_config', 'base_only'))
+        config = EasyConfig("Base", path)
 
         with self.assertRaises(KeyError) as e:
             # noinspection PyStatementEffect

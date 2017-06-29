@@ -1,7 +1,14 @@
 import collections
-from typing import List, Dict
+from typing import List
 
 from easyconfig.config_dto import ConfigRecord, ConfigNode
+
+
+def ensure_config_stage_exists(configs: List[ConfigRecord], stage: str):
+    for conf in configs:
+        if conf.name == stage:
+            return True
+    raise KeyError('The stage \'{0}\' does not exist'.format(stage))
 
 
 def ensure_unique_configs(configs: List[ConfigRecord]):
@@ -22,26 +29,6 @@ def ensure_unique_configs(configs: List[ConfigRecord]):
     return True
 
 
-def ensure_config_node_inheritance_is_valid(configs: List[ConfigRecord]):
-    # See: https://stackoverflow.com/a/29942118/1705337
-    lookup: Dict[str, ConfigNode] = {conf.name: ConfigNode(conf) for conf in configs}
-    root_nodes = []
-
-    for conf in configs:
-        if conf.name in lookup:
-            current_node = lookup[conf.name]
-            current_node.parent = conf
-        else:
-            current_node = ConfigNode(conf)
-
-        if conf.name == conf.parent:
-            root_nodes.append(current_node)
-        else:
-            if conf.parent not in lookup:
-                parent_node = ConfigNode()
-                lookup[conf.parent] = parent_node
-            else:
-                parent_node = lookup[conf.parent]
-            parent_node.children.append(current_node)
-            current_node.parent = parent_node
-    return root_nodes
+# TODO: Implement this.
+def ensure_config_node_inheritance_is_valid(config_trees: List[ConfigNode]):
+    pass

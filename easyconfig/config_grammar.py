@@ -73,5 +73,4 @@ def convert_dictionary(s, l, toks):
 
 def convert_config_record(s, l, toks):
     toks = convert_list(s, l, toks[0])
-    print(toks)
     return ConfigRecord(toks[0], toks[1], toks[2])
