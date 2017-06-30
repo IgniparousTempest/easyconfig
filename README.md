@@ -2,18 +2,18 @@
 EasyConfig is a simple and extensible configuration tool for Python. EasyConfig enables inheritance based configuration definition, which can be used to specify region or release stage specific configuration (or any other conceivable configuration sub-stage). If you can read JSON, you can read EasyConfig!
 
 ##### Table of Contents
-[Installation](#installation)
-[Example 1](#example_1_-_inheritance)
-[Example 2](#example_2)
-[Syntax](#syntax)
-[Data Types](#data_types)
+[Installation](#installation)</br>
+[Example 1](#example-1---inheritance)</br>
+[Example 2](#example-2)</br>
+[Syntax](#syntax)</br>
+[Data Types](#data-types)</br>
 
 ## Installation
 `pip install easyconfig`
 
 ## Example 1 - Inheritance
 The following config file defines the parameters for connecting to a database for a production release and a development release:
-```json
+```javascript
 Base : {
     'database_url': 'localhost:8001',
     'database_name': 'MyDB',
@@ -73,13 +73,13 @@ if __name__ == "__main__":
 ## Example 2
 The following shows the definition of some countries on Earth:
 
-```json
+```javascript
 Earth : {
   'planet' : 'Earth',
   'population' : '7.51 billion'
 }
 ```
-```json
+```javascript
 Africa extends Earth : {
   'continent' : 'Africa',
   'government' : {
@@ -88,7 +88,7 @@ Africa extends Earth : {
   'population' : '1.22 billion'
 }
 ```
-```json
+```javascript
 SouthAfrica extends Africa : {
   'country': 'South Africa',
   "government" : {
@@ -98,7 +98,7 @@ SouthAfrica extends Africa : {
   'population' : '52.9 million'
 }
 ```
-```json
+```javascript
 Morocco extends Africa : {
   'country': 'Morocco',
   "government" : {
@@ -118,13 +118,13 @@ config = EasyConfig(stage='SouthAfrica')
 ## Syntax
 
 Each config definition starts with a name, followed by an optional parent:
-```
+```javascript
 Espresso extends Coffee
 ```
 Where `Espresso` is the name of the config, and `Coffee` is the parent config.
 
 After the name, the config definition requires a config block:
-```
+```javascript
 Espresso extends Coffee : {
     "root" : "text",
     "nested" : {
